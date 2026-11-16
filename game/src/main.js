@@ -101,7 +101,6 @@ const G = {
   time: 0,
   shake: 0,
   hadLock: false,
-  prevFiring: false,
   dryAt: 0,
   lastTimer: '',
   lastBomb: '',
@@ -521,11 +520,13 @@ function fixedStep(dt) {
     }
   }
 
-  // Shooting: full-auto weapons fire while held; the rest need a fresh click.
+  // Shooting: full-auto weapons fire while held; the rest fire once per click.
+  // The queue is drained every step so a click never goes stale across a
+  // weapon switch.
   const firing = input.state.firing;
+  const clicked = input.consumeShot();
   const def = weapons.def();
-  const trigger = def.auto ? firing : firing && !G.prevFiring;
-  G.prevFiring = firing;
+  const trigger = def.auto ? firing : clicked;
   if (trigger && live && G.alive && !G.buyOpen && input.state.locked) {
     if (weapons.ready()) playerShoot();
     else if (weapons.ammoOf(weapons.current()).mag === 0) weapons.reload();

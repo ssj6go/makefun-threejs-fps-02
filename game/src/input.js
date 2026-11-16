@@ -5,7 +5,7 @@
 export function createInput(canvas, onLockChange) {
   const keys = new Set();
   const pressed = new Set();
-  const state = { keys, pressed, locked: false, firing: false, lookX: 0, lookY: 0 };
+  const state = { keys, pressed, locked: false, firing: false, shotQueued: false, lookX: 0, lookY: 0 };
 
   function setKey(event, down) {
     if (down) {
@@ -24,7 +24,12 @@ export function createInput(canvas, onLockChange) {
     state.lookY += event.movementY;
   });
   window.addEventListener('mousedown', (event) => {
-    if (state.locked && event.button === 0) state.firing = true;
+    if (state.locked && event.button === 0) {
+      state.firing = true;
+      // The edge, not the level: a fast click must still fire once even if
+      // the button is up again before the next frame runs.
+      state.shotQueued = true;
+    }
   });
   window.addEventListener('mouseup', (event) => {
     if (event.button === 0) state.firing = false;
@@ -34,6 +39,7 @@ export function createInput(canvas, onLockChange) {
     if (!state.locked) {
       keys.clear();
       state.firing = false;
+      state.shotQueued = false;
     }
     onLockChange(state.locked);
   });
@@ -57,6 +63,12 @@ export function createInput(canvas, onLockChange) {
     consume(code) {
       if (!pressed.has(code)) return false;
       pressed.delete(code);
+      return true;
+    },
+    // True once per mouse click, whenever the frame runs.
+    consumeShot() {
+      if (!state.shotQueued) return false;
+      state.shotQueued = false;
       return true;
     },
     endFrame() {
