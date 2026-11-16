@@ -1,35 +1,43 @@
 // The HUD: one owner for every DOM element in index.html, so game logic never
 // touches the document directly. Buy menu items are rendered from the weapon
-// definitions; everything else is a small setter.
+// definitions; everything else is a small setter. Visibility follows the
+// page's own convention: the `hidden` attribute for panels, `.show` for the
+// banner, `.on` for the hitmarker, `.hurt` for the damage vignette.
 import { GRENADE_PRICE, GRENADE_MAX } from './weapons.js';
 
 export function createHUD() {
   const $ = (id) => document.getElementById(id);
+  const banner = $('banner');
   const el = {
+    health: $('health'),
     healthNum: $('health-num'),
     healthFill: $('health-fill'),
     ammo: $('ammo'),
+    ammoMag: $('ammo-mag'),
+    ammoReserve: $('ammo-reserve'),
     weaponName: $('weapon-name'),
+    grenades: $('grenades'),
     money: $('money'),
-    roundNum: $('round-num'),
-    scoreUs: $('score-us'),
-    scoreThem: $('score-them'),
+    roundLabel: $('round-label'),
+    scoreYou: document.querySelector('#score .you'),
+    scoreFoe: document.querySelector('#score .foe'),
     timer: $('timer'),
     bombStatus: $('bomb-status'),
     killfeed: $('killfeed'),
-    banner: $('banner'),
-    bannerTitle: $('banner-title'),
-    bannerSub: $('banner-sub'),
+    banner,
+    bannerTitle: banner.querySelector('h2'),
+    bannerSub: banner.querySelector('p'),
     hint: $('hint'),
     plantBar: $('plant-bar'),
     plantFill: $('plant-fill'),
     buyMenu: $('buy-menu'),
+    buyRound: $('buy-round'),
     shop: $('shop'),
     buyCash: $('buy-cash'),
     buyClose: $('buy-close'),
     overlay: $('overlay'),
     overlayTitle: $('overlay-title'),
-    overlaySub: $('overlay-sub'),
+    overlaySub: $('overlay-copy'),
     play: $('play'),
     crosshair: $('crosshair'),
     hitmarker: $('hitmarker'),
@@ -40,21 +48,25 @@ export function createHUD() {
 
   return {
     setHealth(hp) {
-      el.healthNum.textContent = Math.max(0, Math.ceil(hp));
+      const shown = Math.max(0, Math.ceil(hp));
+      el.healthNum.innerHTML = `${shown} <span>HP</span>`;
       el.healthFill.style.width = `${Math.max(0, Math.min(100, hp))}%`;
-      el.healthFill.classList.toggle('low', hp <= 30);
+      el.health.classList.toggle('low', hp <= 30);
     },
     setAmmo(mag, reserve, name, grenades) {
-      el.ammo.textContent = `${mag} / ${reserve}`;
-      el.weaponName.textContent = grenades > 0 ? `${name}  ·  Frag ×${grenades}` : name;
+      el.ammoMag.textContent = mag;
+      el.ammoReserve.textContent = `/ ${reserve}`;
+      el.ammo.classList.toggle('empty', mag === 0);
+      el.weaponName.textContent = name.toUpperCase();
+      el.grenades.textContent = `FRAG × ${grenades}  [G]`;
     },
     setMoney(n) {
       el.money.textContent = `$${n.toLocaleString('en-US')}`;
     },
     setRound(n, us, them) {
-      el.roundNum.textContent = `ROUND ${n}`;
-      el.scoreUs.textContent = us;
-      el.scoreThem.textContent = them;
+      el.roundLabel.textContent = `ROUND ${n}`;
+      el.scoreYou.textContent = us;
+      el.scoreFoe.textContent = them;
     },
     setTimer(text, urgent) {
       el.timer.textContent = text;
@@ -62,11 +74,11 @@ export function createHUD() {
     },
     setBomb(text, cls) {
       el.bombStatus.textContent = text;
-      el.bombStatus.className = `bomb-status ${cls || ''}`;
+      el.bombStatus.className = cls || '';
     },
     killfeed(msg, cls) {
       const row = document.createElement('div');
-      row.className = `feed-row ${cls || ''}`;
+      row.className = cls || '';
       row.textContent = msg;
       el.killfeed.prepend(row);
       while (el.killfeed.children.length > 5) el.killfeed.lastChild.remove();
@@ -79,31 +91,31 @@ export function createHUD() {
       clearTimeout(bannerTimer);
       bannerTimer = setTimeout(() => el.banner.classList.remove('show'), ms);
     },
+    hideBanner() {
+      clearTimeout(bannerTimer);
+      el.banner.classList.remove('show');
+    },
     hint(text) {
       el.hint.textContent = text || '';
+      el.hint.hidden = !text;
     },
     plant(progress) {
-      if (progress === null) {
-        el.plantBar.classList.remove('show');
-        return;
-      }
-      el.plantBar.classList.add('show');
-      el.plantFill.style.width = `${Math.round(progress * 100)}%`;
+      el.plantBar.hidden = progress === null;
+      if (progress !== null) el.plantFill.style.width = `${Math.round(progress * 100)}%`;
     },
     crosshairGap(px) {
       el.crosshair.style.setProperty('--gap', `${px.toFixed(1)}px`);
     },
-    hitmarker(kill) {
-      el.hitmarker.classList.add('show');
-      el.hitmarker.classList.toggle('kill', kill);
+    hitmarker() {
+      el.hitmarker.classList.add('on');
       clearTimeout(hitTimer);
-      hitTimer = setTimeout(() => el.hitmarker.classList.remove('show', 'kill'), 140);
+      hitTimer = setTimeout(() => el.hitmarker.classList.remove('on'), 140);
     },
     damageFlash() {
       el.vignette.classList.add('hurt');
       setTimeout(() => el.vignette.classList.remove('hurt'), 220);
     },
-    showBuy(defs, owned, current, cash, grenades, onBuy) {
+    showBuy(defs, owned, current, cash, grenades, round, onBuy) {
       el.shop.innerHTML = '';
       const items = [];
       let key = 1;
@@ -116,15 +128,28 @@ export function createHUD() {
         const row = document.createElement('div');
         const afford = cash >= item.price;
         row.className = `shop-item${item.equipped ? ' equipped' : ''}${!afford && !item.owned ? ' cant' : ''}`;
-        row.innerHTML = `<span class="shop-key">${item.key}</span><span class="shop-name">${item.name}${item.count ? ` ×${item.count}` : ''}</span><span class="shop-blurb">${item.blurb}</span><span class="shop-price">$${item.price.toLocaleString('en-US')}</span>`;
+        const keyEl = document.createElement('span');
+        keyEl.className = 'key';
+        keyEl.textContent = item.key;
+        const nmEl = document.createElement('span');
+        nmEl.className = 'nm';
+        nmEl.textContent = item.count ? `${item.name} ×${item.count}` : item.name;
+        const dsEl = document.createElement('span');
+        dsEl.className = 'ds';
+        dsEl.textContent = item.blurb;
+        const prEl = document.createElement('span');
+        prEl.className = 'pr';
+        prEl.textContent = item.owned && item.id !== 'grenade' ? 'OWNED' : `$${item.price.toLocaleString('en-US')}`;
+        row.append(keyEl, nmEl, dsEl, prEl);
         row.addEventListener('click', () => onBuy(item.id));
         el.shop.appendChild(row);
       }
       el.buyCash.textContent = `$${cash.toLocaleString('en-US')}`;
-      el.buyMenu.classList.add('show');
+      el.buyRound.textContent = round;
+      el.buyMenu.hidden = false;
     },
     hideBuy() {
-      el.buyMenu.classList.remove('show');
+      el.buyMenu.hidden = true;
     },
     onBuyClose(handler) {
       el.buyClose.addEventListener('click', handler);
@@ -133,11 +158,11 @@ export function createHUD() {
       el.overlayTitle.textContent = title;
       el.overlaySub.textContent = sub;
       el.play.textContent = buttonText;
-      el.overlay.classList.add('show');
+      el.overlay.hidden = false;
       el.play.onclick = onPlay;
     },
     hideOverlay() {
-      el.overlay.classList.remove('show');
+      el.overlay.hidden = true;
     },
     setPlayEnabled(enabled) {
       el.play.disabled = !enabled;

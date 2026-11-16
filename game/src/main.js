@@ -48,7 +48,7 @@ if (shotMode) Math.random = mulberry32(Number.isFinite(shotSeed) ? shotSeed : 1)
 // ---- Scene, renderer, camera ----------------------------------------------
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(PALETTE.canvas);
-scene.fog = new THREE.Fog(new THREE.Color(PALETTE.canvas), 22, 62);
+scene.fog = new THREE.Fog(new THREE.Color(PALETTE.canvas), 30, 90);
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 220);
 camera.rotation.order = 'YXZ';
@@ -277,7 +277,7 @@ function playerShoot() {
     break;
   }
   if (!end) end = tmpVec.copy(camera.position).addScaledVector(shootDir, 60);
-  muzzlePos.set(0.24, -0.16, -0.9).applyMatrix4(camera.matrixWorld);
+  muzzlePos.set(0.26, -0.22, -0.9).applyMatrix4(camera.matrixWorld);
   effects.tracer(muzzlePos, end, false);
   bots.hear(player.state.position, SHOT_HEAR_RANGE);
 }
@@ -340,7 +340,7 @@ function openBuy() {
   if (!rounds.buyOpen() || !G.alive || G.matchOver) return;
   G.buyOpen = true;
   input.releaseLock();
-  hud.showBuy(WEAPON_DEFS, weapons.owned, weapons.current(), rounds.state.money, rounds.state.grenades, buyItem);
+  hud.showBuy(WEAPON_DEFS, weapons.owned, weapons.current(), rounds.state.money, rounds.state.grenades, rounds.state.round, buyItem);
 }
 
 function closeBuy() {
@@ -376,7 +376,7 @@ function buyItem(id) {
     }
   }
   refreshHud();
-  hud.showBuy(WEAPON_DEFS, weapons.owned, weapons.current(), rounds.state.money, rounds.state.grenades, buyItem);
+  hud.showBuy(WEAPON_DEFS, weapons.owned, weapons.current(), rounds.state.money, rounds.state.grenades, rounds.state.round, buyItem);
 }
 
 hud.onBuyClose(closeBuy);
@@ -701,20 +701,27 @@ function stageShot() {
   }
   if (shotMode === 'buy') {
     startMatch();
+    hud.hideOverlay();
+    hud.hideBanner();
     openBuy();
     return;
   }
   if (shotMode === 'end') {
     startMatch();
+    rounds.state.round = 8;
     rounds.state.scoreUs = 5;
     rounds.state.scoreThem = 3;
     rounds.state.phase = 'matchEnd';
     G.matchOver = true;
+    hud.hideBanner();
+    refreshHud();
+    updateDynamicHud();
     hud.overlay('MATCH WON', '5 — 3 · 9 eliminations · Emberline takes the Foundry. Play again?', 'PLAY AGAIN', () => {});
     return;
   }
   // 'play': mid-round, rifle in hand, two bots in view down the mid lane.
   startMatch();
+  hud.hideOverlay();
   rounds.state.phase = 'live';
   rounds.state.roundLeft = 83;
   rounds.state.round = 4;
@@ -723,21 +730,25 @@ function stageShot() {
   rounds.state.money = 2450;
   weapons.buy('rifle');
   weapons.equip('rifle');
-  player.teleport(0, 6, 0);
+  player.teleport(0, 0, 6, 0);
   player.state.yaw = 0;
   const warden0 = bots.bots[0];
-  warden0.mover.teleport(1.5, 0, -2.5);
+  warden0.mover.teleport(1.2, 0, 0.5);
   warden0.state = 'hold';
   warden0.scanId = 'midS';
   warden0.yaw = Math.PI;
+  warden0.group.position.copy(warden0.mover.position);
+  warden0.group.rotation.y = Math.PI;
   const warden1 = bots.bots[1];
-  warden1.mover.teleport(-5, 0, -6.5);
+  warden1.mover.teleport(-2.8, 0, 2.8);
   warden1.state = 'hold';
   warden1.scanId = 'midDoor';
-  warden1.yaw = Math.PI * 0.75;
-  for (let i = 0; i < 90; i += 1) fixedStep(FIXED_DT);
+  warden1.yaw = Math.PI;
+  warden1.group.position.copy(warden1.mover.position);
+  warden1.group.rotation.y = Math.PI;
   refreshHud();
   updateDynamicHud();
+  hud.banner('ROUND 4', 'Plant the bomb at A or B — first to 5', 2400);
 }
 
 if (shotMode) {

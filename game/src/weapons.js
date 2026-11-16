@@ -30,7 +30,8 @@ function buildModel(kind) {
     const frame = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.11, 0.09), grip);
     frame.position.set(0, -0.08, 0.06);
     model.add(slide, frame);
-    model.position.set(0.2, -0.19, -0.32);
+    model.position.set(0.22, -0.22, -0.4);
+    model.scale.setScalar(0.65);
   } else if (kind === 'smg') {
     const receiver = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.09, 0.3), body);
     const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 0.22), grip);
@@ -38,7 +39,8 @@ function buildModel(kind) {
     const mag = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.14, 0.07), grip);
     mag.position.set(0, -0.1, -0.02);
     model.add(receiver, barrel, mag);
-    model.position.set(0.23, -0.2, -0.38);
+    model.position.set(0.25, -0.24, -0.45);
+    model.scale.setScalar(0.65);
   } else if (kind === 'sniper') {
     const receiver = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.09, 0.5), body);
     const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.55, 10), grip);
@@ -47,20 +49,22 @@ function buildModel(kind) {
     const scope = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.22, 10), accent);
     scope.rotation.x = Math.PI / 2;
     scope.position.set(0, 0.09, -0.05);
-    const stock = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.09, 0.24), grip);
-    stock.position.set(0, -0.02, 0.34);
+    const stock = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.09, 0.16), grip);
+    stock.position.set(0, -0.02, 0.2);
     model.add(receiver, barrel, scope, stock);
-    model.position.set(0.24, -0.21, -0.46);
+    model.position.set(0.26, -0.25, -0.55);
+    model.scale.setScalar(0.65);
   } else {
     const receiver = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.1, 0.42), body);
     const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.045, 0.4), grip);
     barrel.position.set(0, 0.025, -0.38);
-    const stock = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.08, 0.22), grip);
-    stock.position.set(0, -0.02, 0.3);
+    const stock = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.08, 0.16), grip);
+    stock.position.set(0, -0.02, 0.18);
     const sight = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.05, 0.1), accent);
     sight.position.set(0, 0.08, -0.1);
     model.add(receiver, barrel, stock, sight);
-    model.position.set(0.24, -0.2, -0.42);
+    model.position.set(0.26, -0.25, -0.55);
+    model.scale.setScalar(0.65);
   }
   return model;
 }
@@ -76,11 +80,11 @@ export function createWeapons(camera) {
     new THREE.PlaneGeometry(0.26, 0.26),
     new THREE.MeshBasicMaterial({ color: new THREE.Color(PALETTE.accent), transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide }),
   );
-  flash.position.set(0.24, -0.18, -0.95);
+  flash.position.set(0.26, -0.22, -0.9);
   flash.visible = false;
   camera.add(flash);
   const flashLight = new THREE.PointLight(new THREE.Color(PALETTE.accent), 0, 5);
-  flashLight.position.set(0.24, -0.16, -0.6);
+  flashLight.position.set(0.26, -0.2, -0.6);
   camera.add(flashLight);
 
   const ammo = {};

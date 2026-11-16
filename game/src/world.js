@@ -9,7 +9,7 @@ import { PALETTE } from './palette.js';
 // [width, height, depth, x, y, z, material]
 const BOXES = [
   // Floor and perimeter (4.6 m walls).
-  [46.4, 0.4, 40.4, 0, -0.2, 0, 'canvas'],
+  [46.4, 0.4, 40.4, 0, -0.2, 0, 'surface'],
   [0.4, 4.6, 40.4, -23.2, 2.3, 0, 'surface'],
   [0.4, 4.6, 40.4, 23.2, 2.3, 0, 'surface'],
   [46.4, 4.6, 0.4, 0, 2.3, -20.2, 'surface'],
@@ -191,10 +191,10 @@ export function createWorld(scene) {
 
   // Light: a warm key from the front right, a cool fill from behind, and a
   // sky/ground gradient. Shadows on the key light only.
-  const sky = new THREE.HemisphereLight(new THREE.Color(PALETTE.surface), new THREE.Color(PALETTE.canvas), 1.15);
+  const sky = new THREE.HemisphereLight(new THREE.Color(PALETTE.muted), new THREE.Color(PALETTE.surface), 1.5);
   scene.add(sky);
 
-  const key = new THREE.DirectionalLight(new THREE.Color(PALETTE.ink), 2.1);
+  const key = new THREE.DirectionalLight(new THREE.Color(PALETTE.ink), 2.6);
   key.position.set(14, 20, 12);
   key.target.position.set(0, 0, -2);
   key.castShadow = true;
@@ -207,7 +207,7 @@ export function createWorld(scene) {
   key.shadow.bias = -0.0006;
   scene.add(key, key.target);
 
-  const fill = new THREE.DirectionalLight(new THREE.Color(PALETTE.muted), 0.5);
+  const fill = new THREE.DirectionalLight(new THREE.Color(PALETTE.muted), 0.8);
   fill.position.set(-12, 12, 14);
   scene.add(fill);
 
